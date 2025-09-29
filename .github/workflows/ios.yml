@@ -1,0 +1,28 @@
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -switch /Applications/Xcode_15.0.app
+
+      - name: Build project
+        run: |
+          xcodebuild \
+            -project ShoppingList28a.xcodeproj \
+            -scheme ShoppingList28a \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0' \
+            clean build
+
+      - name: Run tests
+        run: |
+          xcodebuild \
+            -project ShoppingList28a.xcodeproj \
+            -scheme ShoppingList28a \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.0' \
+            test
