@@ -8,7 +8,7 @@ private struct PrimaryButtonStyle: ButtonStyle {
         configuration.label
             .font(.headline)
             .fontWeight(.bold)
-            .frame(maxWidth: 343)
+            .frame(maxWidth: .infinity)
             .frame(height: 44)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule())
