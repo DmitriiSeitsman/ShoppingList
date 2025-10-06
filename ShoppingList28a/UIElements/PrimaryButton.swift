@@ -1,5 +1,27 @@
 import SwiftUI
 
+struct PrimaryButton: View {
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+        }
+        .buttonStyle(PrimaryButtonStyle(isActive: isActive))
+        .foregroundColor(isActive ? .slWhite : .slGrey)
+        .disabled(!isActive)
+    }
+    
+    let title: String
+    let isActive: Bool
+    let action: () -> Void
+
+    init(title: String, isActive: Bool = true, action: @escaping () -> Void) {
+        self.title = title
+        self.isActive = isActive
+        self.action = action
+    }
+}
+
 private struct PrimaryButtonStyle: ButtonStyle {
     
     let isActive: Bool
@@ -12,8 +34,6 @@ private struct PrimaryButtonStyle: ButtonStyle {
             .frame(height: 44)
             .background(backgroundColor(isPressed: configuration.isPressed))
             .clipShape(Capsule())
-            .animation(.easeInOut(duration: 0.15), value: isActive)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
     
     private func backgroundColor(isPressed: Bool) -> Color {
@@ -25,22 +45,6 @@ private struct PrimaryButtonStyle: ButtonStyle {
         } else {
             return Color(.slTurquoise)
         }
-    }
-}
-
-struct PrimaryButton: View {
-    
-    let title: String
-    let isActive: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-        }
-        .buttonStyle(PrimaryButtonStyle(isActive: isActive))
-        .foregroundColor(isActive ? .slWhite : .slGrey)
-        .disabled(!isActive)
     }
 }
 
