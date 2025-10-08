@@ -1,10 +1,3 @@
-//
-//  ContentView.swift
-//  ShoppingList28a
-//
-//  Created by Nikita Tsomuk on 29.09.2025.
-//
-
 import SwiftUI
 
 struct ContentView: View {
