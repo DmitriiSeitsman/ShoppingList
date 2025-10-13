@@ -38,20 +38,20 @@ struct GroceryListItem: View {
 private struct PreviewHost: View {
   @State private var items: [GroceryItem] = [
     GroceryItem(name: "Apples", isPurchased: true, quantity: 5),
-    GroceryItem(name: "Bananas", isPurchased: false, quantity: 3),
+    GroceryItem(name: "Bananas", isPurchased: false, quantity: 3)
   ]
 
   var body: some View {
     List {
-      ForEach(items.indices, id: \.self) { i in
+      ForEach(items.indices, id: \.self) { index in
         GroceryListItem(
-          item: $items[i],
-          onDelete: { items.remove(at: i) },
+          item: $items[index],
+          onDelete: { items.remove(at: index) },
           onFlag: {
-            print("Edit \(items[i].name)")
+            print("Edit \(items[index].name)")
           }
         )
-        .foregroundColor(!items[i].isPurchased ? .slBlackFontsMain : .slGreyList)
+        .foregroundColor(!items[index].isPurchased ? .slBlackFontsMain : .slGreyList)
 
       }
       .onDelete { indexSet in
