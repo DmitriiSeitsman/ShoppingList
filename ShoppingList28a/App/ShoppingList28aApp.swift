@@ -4,7 +4,7 @@ import SwiftUI
 struct ShoppingList28aApp: App {
     var body: some Scene {
         WindowGroup {
-            WelcomeView()
+            EmptyStateView()
         }
     }
 }
