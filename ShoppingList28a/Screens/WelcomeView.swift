@@ -13,7 +13,7 @@ struct WelcomeView: View {
                 .padding(50)
             
             Spacer()
-            
+             
             VStack(spacing: 16) {
                 Text("Никогда не забывайте, \nчто нужно купить")
                     .font(.title2)
