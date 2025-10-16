@@ -11,10 +11,13 @@ struct CreateListView: View {
                 } label: {
                     Image("IconChevronLeft")
                         .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(.slBlackFontsTitle)
                         .frame(width: 8, height: 16)
                         .frame(width: 28, height: 28)
                         .contentShape(Rectangle())
                         .frame(width: 28, height: 44)
+                    
                 }
                 .buttonStyle(.plain)
                 
