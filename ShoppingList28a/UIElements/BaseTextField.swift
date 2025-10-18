@@ -8,10 +8,10 @@ struct BaseTextField: View {
                 TextField(placeholder, text: $text)
                     .padding(.horizontal, 16)
                     .frame(height: 54)
-                    .background(Color.slWhite)
+                    .background(Color.slFramesBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(isError ? Color.slRedSystem : Color.slGreyButton, lineWidth: 0.5)
+                            .stroke(isError ? Color.slRedSystem : Color.slFramesBackground, lineWidth: 0.5)
                     )
                     .cornerRadius(12)
                     .font(.appBody)
