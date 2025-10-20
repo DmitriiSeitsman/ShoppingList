@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct WelcomeView: View {
+  @EnvironmentObject var appState: AppState
   var onStart: (() -> Void)?
 
   var body: some View {
@@ -27,7 +28,7 @@ struct WelcomeView: View {
       Spacer()
 
       PrimaryButton(title: "Начать") {
-        onStart?()
+        appState.markOnboardingAsSeen()
       }
       .padding(20)
     }
@@ -37,4 +38,5 @@ struct WelcomeView: View {
 
 #Preview {
   WelcomeView()
+    .environmentObject(AppState())
 }
