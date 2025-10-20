@@ -43,7 +43,7 @@ struct ShoppingListsList: View {
               }.tint(.slOrangeSystem)
 
               Button {
-                let item = lists[index]
+                
               } label: {
                 Image(systemName: "square.and.pencil")
               }.tint(.slGreySystem)

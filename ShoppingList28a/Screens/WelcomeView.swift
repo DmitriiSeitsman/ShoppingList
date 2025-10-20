@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WelcomeView: View {
-  var onStart: (() -> Void)? = nil
+  var onStart: (() -> Void)?
 
   var body: some View {
     VStack(spacing: 0) {
