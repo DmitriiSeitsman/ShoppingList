@@ -43,7 +43,7 @@ struct ShoppingListsList: View {
               }.tint(.slOrangeSystem)
 
               Button {
-                
+
               } label: {
                 Image(systemName: "square.and.pencil")
               }.tint(.slGreySystem)
@@ -54,6 +54,7 @@ struct ShoppingListsList: View {
         }
       }
       .scrollContentBackground(.hidden)
+      .contentMargins(.vertical, 0)
       .listRowSpacing(12)
       .listStyle(.insetGrouped)
       .alert(
