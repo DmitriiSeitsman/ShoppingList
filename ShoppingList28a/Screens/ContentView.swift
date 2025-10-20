@@ -1,17 +1,21 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+  @State private var hasOnboarded: Bool = false
+
+  var body: some View {
+    NavigationStack {
+      if hasOnboarded {
+        MainView()
+      } else {
+        WelcomeView {
+          hasOnboarded = true
         }
-        .padding()
+      }
     }
+  }
 }
 
 #Preview {
-    ContentView()
+  ContentView()
 }
