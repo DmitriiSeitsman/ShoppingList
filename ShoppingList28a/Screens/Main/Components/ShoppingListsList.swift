@@ -71,7 +71,7 @@ struct ShoppingListsList: View {
 }
 
 #Preview("Data") {
-  @State @Previewable var lists = ShoppingList.mockArray
+  @State @Previewable var lists = ShoppingList.previewArray
   ShoppingListsList(lists: $lists, sortBy: .name)
 }
 

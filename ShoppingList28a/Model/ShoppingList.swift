@@ -6,6 +6,9 @@ final class ShoppingList {
     var name: String
     var createdAt: Date
     var itemsData: Data  // Храним как Data
+    
+    var iconName: String
+    var iconColor: String
 
     // Вычисляемое свойство для работы с GroceryItem
     var items: [GroceryItem] {
@@ -17,10 +20,12 @@ final class ShoppingList {
         }
     }
 
-    init(name: String, createdAt: Date = .now, items: [GroceryItem] = []) {
+    init(name: String, createdAt: Date = .now, iconName: String = "iconCart", iconColor: String = "slYellowAdditional", items: [GroceryItem] = []) {
         self.name = name
         self.createdAt = createdAt
         self.itemsData = Self.encodeItems(items)
+        self.iconName = iconName
+        self.iconColor = iconColor
     }
 
     var purchasedCount: Int {
@@ -72,34 +77,5 @@ final class ShoppingList {
         } catch {
             return []
         }
-    }
-
-    static var mock: ShoppingList {
-        let list = ShoppingList(name: "Продукты на неделю")
-        list.items = [
-            GroceryItem(name: "Хлеб", isPurchased: true, quantity: 1),
-            GroceryItem(name: "Молоко", isPurchased: false, quantity: 2),
-            GroceryItem(name: "Яйца", isPurchased: false, quantity: 10),
-            GroceryItem(name: "Сыр", isPurchased: true, quantity: 1)
-        ]
-        return list
-    }
-
-    // Моковый массив для превью
-    static var mockArray: [ShoppingList] {
-        let list1 = ShoppingList(name: "Продукты")
-        list1.items = [
-            GroceryItem(name: "Яблоки", isPurchased: true, quantity: 5),
-            GroceryItem(name: "Бананы", isPurchased: false, quantity: 3),
-            GroceryItem(name: "Молоко", isPurchased: false, quantity: 2)
-        ]
-
-        let list2 = ShoppingList(name: "Техника")
-        list2.items = [
-            GroceryItem(name: "Наушники", isPurchased: false, quantity: 1),
-            GroceryItem(name: "Зарядка", isPurchased: true, quantity: 2)
-        ]
-
-        return [list1, list2]
     }
 }

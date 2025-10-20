@@ -5,7 +5,7 @@ struct MainView: View {
     case name, date, none
   }
 
-  @State private var lists: [ShoppingList] = ShoppingList.mockArray
+  @State private var lists: [ShoppingList] = ShoppingList.previewArray
   @State private var sortBy: SortOption = .none
 
   var body: some View {
