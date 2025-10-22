@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct CreateListView: View {
+    // MARK: - Environment
+    @EnvironmentObject private var router: Router
+    
     // MARK: - State
     @State private var listTitle: String = ""
     @State private var selectedColor: Color?
@@ -17,9 +20,20 @@ struct CreateListView: View {
             headerView
             contentView
             PrimaryButton(title: "Создать", isActive: isButtonActive) {
-                print("Создать список с названием: \(listTitle)")
-                print("Цвет: \(String(describing: selectedColor))")
-                print("Иконка: \(String(describing: selectedIcon))")
+                guard let selectedColor else { return }
+                guard let selectedIcon else { return }
+                
+                let newList = ShoppingList(
+                    name: listTitle,
+                    iconName: selectedIcon,
+                    iconColor: selectedColor.assetName ?? "slYellowAdditional"
+                )
+                
+                // Здесь далее вставить сохранение в SwiftData
+                // context.insert(newList)
+                // try? context.save()
+                
+                router.push(.storySet(newList))
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
@@ -31,7 +45,7 @@ struct CreateListView: View {
     private var headerView: some View {
         HStack(spacing: 8) {
             Button {
-                print("возврат к экрану мои списки")
+                router.pop()
             } label: {
                 Image("IconChevronLeft")
                     .resizable()
@@ -85,4 +99,5 @@ struct CreateListView: View {
 
 #Preview {
     CreateListView()
+        .environmentObject(Router())
 }
