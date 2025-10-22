@@ -6,6 +6,7 @@ struct GroceryItemsList: View {
     let onAddItem: () -> Void
     let onDelete: (GroceryItem) -> Void
     let onDeleteAllPurchased: () -> Void
+    let onEditList: () -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -16,20 +17,16 @@ struct GroceryItemsList: View {
                             item: $items[index],
                             onDelete: { onDelete(items[index]) },
                             onFlag: {
-                                // исправлено: корректная интерполяция
-                                print("Редактировать товар: $$items[index].name)")
+                                print("Редактировать товар: \(items[index].name)")
                             }
                         )
                         .foregroundColor(!items[index].isPurchased ? .slBlackFontsMain : .slGreyList)
                     }
-                    // Закрываем встроенный Divider() внутри GroceryListItem, чтобы он не "ломал" линию
                     .overlay(
-                        // захораниваем ту маленькую линию, которую кладёт сам GroceryListItem
                         Color.slBackground
                             .frame(height: 1),
                         alignment: .bottom
                     )
-                    // Рисуем верхнюю границу только если это не первая строка
                     .overlay(alignment: .top) {
                         if index != items.startIndex {
                             Rectangle()
@@ -40,21 +37,11 @@ struct GroceryItemsList: View {
                             EmptyView()
                         }
                     }
-                    .listRowBackground(Color.clear)         // фон строки прозрачный
+                    .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 }
                 .onDelete { indexSet in items.remove(atOffsets: indexSet) }
-                
-                // Bottom bar — верхняя линия обязательна
-                GroceryListBottomBarRow(
-                    purchasedCount: purchasedCount,
-                    onEdit: { print("Редактировать список") },
-                    onDeleteAll: onDeleteAllPurchased
-                )
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
@@ -69,7 +56,6 @@ struct GroceryItemsList: View {
 
 // MARK: - Preview
 #Preview {
-    // Упрощенная версия превью без State
     let items = [
         GroceryItem(name: "Молоко", isPurchased: false, quantity: 2, unit: "л"),
         GroceryItem(name: "Сыр", isPurchased: false, quantity: 2, unit: "кг"),
@@ -86,6 +72,9 @@ struct GroceryItemsList: View {
         },
         onDeleteAllPurchased: {
             print("Delete all purchased items")
+        },
+        onEditList: {
+            print("Редактировать список")
         }
     )
 }

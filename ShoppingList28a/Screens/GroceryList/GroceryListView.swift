@@ -45,7 +45,10 @@ struct GroceryListView: View {
                     purchasedCount: purchasedCount,
                     onAddItem: { viewModel.showingAddItem = true },
                     onDelete: viewModel.deleteItem,
-                    onDeleteAllPurchased: { viewModel.clearPurchased() }
+                    onDeleteAllPurchased: { viewModel.clearPurchased() },
+                    onEditList: {
+                        print("Редактируем ячейку")
+                    }
                 )
             }
         }
