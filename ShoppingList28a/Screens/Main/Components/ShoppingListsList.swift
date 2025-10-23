@@ -13,7 +13,13 @@ struct ShoppingListsList: View {
 
     var body: some View {
         if lists.isEmpty {
-            EmptyStateView()
+            VStack {
+                Spacer(minLength: 88)
+                EmptyStateView()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.slBackground)
         } else {
             let sorted = lists.sorted { itemA, itemB in
                 switch sortBy {
