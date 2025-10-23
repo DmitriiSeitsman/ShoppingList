@@ -1,38 +1,62 @@
+import SwiftData
 import SwiftUI
 
 struct MainView: View {
-    @EnvironmentObject private var router: Router
-    
-    enum SortOption: CaseIterable {
-        case name, date, none
-    }
-    
-    @State private var lists: [ShoppingList] = ShoppingList.previewArray
-    @State private var sortBy: SortOption = .none
-    
-    var body: some View {
-        VStack {
-            ShoppingListsList(lists: $lists, sortBy: sortBy) { selectedList in
-                router.push(.storySet(selectedList))
-            }
+  @EnvironmentObject private var router: Router
+  @Environment(\.modelContext) private var modelContext
 
-            Spacer()
+  @Query(sort: [SortDescriptor(\ShoppingList.createdAt, order: .reverse)])
+  private var lists: [ShoppingList]
 
-            PrimaryButton(title: "Создать список") {
-                router.push(.createList)
-            }
-            .padding(.horizontal, 16)
-        }
-        .padding(.top, 12)
-        .padding(.bottom, 20)
-        .background(.slBackground)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            TopToolbar(sortBy: $sortBy)
-        }
+  enum SortOption: CaseIterable {
+    case name, date, none
+  }
+
+  @State private var sortBy: SortOption = .none
+
+  private var sortedLists: [ShoppingList] {
+    switch sortBy {
+    case .name:
+      return lists.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    case .date:
+      return lists.sorted { $0.createdAt < $1.createdAt }
+    case .none:
+      return lists
     }
+  }
+
+  var body: some View {
+    VStack {
+      ShoppingListsList(
+        lists: sortedLists,
+        sortBy: sortBy,
+        onSelect: { router.push(.storySet($0)) },
+        onDelete: { modelContext.delete($0) },
+        onDuplicate: { original in
+          let copy = original.copy()
+          modelContext.insert(copy)
+        }
+
+      )
+
+      Spacer()
+
+      PrimaryButton(title: "Создать список") {
+        router.push(.createList)
+      }
+      .padding(.horizontal, 16)
+    }
+    .padding(.top, 12)
+    .padding(.bottom, 20)
+    .background(.slBackground)
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+      TopToolbar(sortBy: $sortBy)
+    }
+  }
 }
 
 #Preview {
-    MainView()
+  MainView()
+    .modelContainer(for: [ShoppingList.self, GroceryItem.self], inMemory: true)
 }
