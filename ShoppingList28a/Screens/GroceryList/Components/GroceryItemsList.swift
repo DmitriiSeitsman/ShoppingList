@@ -5,33 +5,30 @@ struct GroceryItemsList: View {
     // MARK: - Properties
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: [SortDescriptor(\GroceryItem.name)])
-    private var allItems: [GroceryItem]
-
+    let items: [GroceryItem]
     let list: ShoppingList
     let purchasedCount: Int
     let onAddItem: () -> Void
     let onDeleteAllPurchased: () -> Void
     let onEditList: () -> Void
 
+    @State private var editingItem: GroceryItem?
+
     // MARK: - Init
     init(
+        items: [GroceryItem],
         list: ShoppingList,
         purchasedCount: Int,
         onAddItem: @escaping () -> Void,
         onDeleteAllPurchased: @escaping () -> Void,
         onEditList: @escaping () -> Void
     ) {
+        self.items = items
         self.list = list
         self.purchasedCount = purchasedCount
         self.onAddItem = onAddItem
         self.onDeleteAllPurchased = onDeleteAllPurchased
         self.onEditList = onEditList
-    }
-
-    // MARK: - Computed filtered items
-    private var items: [GroceryItem] {
-        allItems.filter { $0.list?.persistentModelID == list.persistentModelID }
     }
 
     // MARK: - Body
@@ -43,13 +40,12 @@ struct GroceryItemsList: View {
                     .padding(.top, 40)
             } else {
                 List {
-                    ForEach(items) { item in
+                    ForEach(items, id: \.persistentModelID) { item in
                         GroceryListItem(
-                            item: .constant(item),
+                            item: item,
                             onDelete: { deleteItem(item) },
-                            onFlag: { print("✏️ Редактировать: \(item.name)") }
+                            onFlag: { startEditing(item) }
                         )
-                        .listRowInsets(EdgeInsets())
                     }
                     .background(.slBackground)
                 }
@@ -62,9 +58,17 @@ struct GroceryItemsList: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
         }
+        .sheet(item: $editingItem) { item in
+            AddItemView(shoppingList: list, editingItem: item)
+                .presentationDetents([.medium, .large])
+        }
     }
 
     // MARK: - Actions
+    private func startEditing(_ item: GroceryItem) {
+        editingItem = item
+    }
+
     private func deleteItem(_ item: GroceryItem) {
         modelContext.delete(item)
         saveContext()
@@ -80,7 +84,7 @@ struct GroceryItemsList: View {
         do {
             try modelContext.save()
         } catch {
-            print("❌ Ошибка сохранения контекста: \(error.localizedDescription)")
+            print("Ошибка сохранения контекста: \(error.localizedDescription)")
         }
     }
 }
@@ -103,6 +107,7 @@ struct GroceryItemsList: View {
         sampleItems.forEach(context.insert)
 
         return GroceryItemsList(
+            items: sampleItems,
             list: list,
             purchasedCount: sampleItems.filter { $0.isPurchased }.count,
             onAddItem: {},

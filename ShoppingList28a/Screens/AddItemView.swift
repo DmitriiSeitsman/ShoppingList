@@ -5,13 +5,16 @@ struct AddItemView: View {
     // MARK: - Environment
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+
     // MARK: - ViewModel
     @StateObject private var viewModel = AddItemViewModel()
-    
+
     // MARK: - Properties
     let shoppingList: ShoppingList
-    
+    var editingItem: GroceryItem?
+
+    private var isEditing: Bool { editingItem != nil }
+
     // MARK: - Body
     var body: some View {
         VStack(spacing: 20) {
@@ -21,6 +24,13 @@ struct AddItemView: View {
         }
         .background(Color.slBackground)
         .animation(.easeInOut(duration: 0.2), value: viewModel.name)
+        .onAppear {
+            if let editingItem {
+                viewModel.name = editingItem.name
+                viewModel.quantity = String(editingItem.quantity)
+                viewModel.unit = editingItem.unit
+            }
+        }
         .onDisappear { viewModel.reset() }
     }
 }
@@ -36,19 +46,23 @@ private extension AddItemView {
             }
             .font(.appBody)
             .foregroundColor(.slGrey)
-            
+
             Spacer()
-            
+
             // MARK: Title
-            Text("Создание товара")
+            Text(isEditing ? "Редактирование товара" : "Создание товара")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(.slBlackFontsTitle)
-            
+
             Spacer()
-            
+
             // MARK: Done button
             Button("Готово") {
-                addNewItem()
+                if isEditing {
+                    updateItem()
+                } else {
+                    addNewItem()
+                }
             }
             .font(.system(size: 17, weight: .semibold))
             .foregroundColor(isFormValid ? .slTurquoise : .slGrey)
@@ -57,7 +71,7 @@ private extension AddItemView {
         .padding(.horizontal, 16)
         .padding(.top, 21)
     }
-    
+
     var form: some View {
         VStack(spacing: 20) {
             BaseTextField(
@@ -66,7 +80,7 @@ private extension AddItemView {
                 isError: viewModel.nameError,
                 errorText: viewModel.nameErrorText
             )
-            
+
             HStack(spacing: -12) {
                 BaseTextField(
                     placeholder: "Количество",
@@ -76,7 +90,7 @@ private extension AddItemView {
                 )
                 .keyboardType(.numberPad)
                 .frame(maxWidth: .infinity)
-                
+
                 ZStack {
                     Text("Ед.изм.:")
                         .font(.appBody)
@@ -87,7 +101,7 @@ private extension AddItemView {
                         .background(Color.slFramesBackground)
                         .cornerRadius(12)
                         .padding(.horizontal, 16)
-                    
+
                     Menu {
                         ForEach(viewModel.availableUnits, id: \.self) { unit in
                             Button(unit) {
@@ -110,7 +124,7 @@ private extension AddItemView {
             }
         }
     }
-    
+
     var isFormValid: Bool {
         !viewModel.name.isEmpty &&
         !viewModel.quantity.isEmpty &&
@@ -122,7 +136,7 @@ private extension AddItemView {
 private extension AddItemView {
     func addNewItem() {
         guard isFormValid else { return }
-        
+
         let newItem = GroceryItem(
             name: viewModel.name,
             isPurchased: false,
@@ -130,30 +144,67 @@ private extension AddItemView {
             unit: viewModel.unit,
             list: shoppingList
         )
-        
+
         do {
             modelContext.insert(newItem)
             try modelContext.save()
-            print("Товар сохранён: \(newItem.name)")
+            print("Товар добавлен: \(newItem.name)")
             viewModel.reset()
             dismiss()
         } catch {
             print("Ошибка сохранения: \(error.localizedDescription)")
         }
     }
+
+    func updateItem() {
+        guard let editingItem else { return }
+        guard isFormValid else { return }
+
+        editingItem.name = viewModel.name
+        editingItem.quantity = Int(viewModel.quantity) ?? 1
+        editingItem.unit = viewModel.unit
+
+        do {
+            try modelContext.save()
+            print("Товар обновлён: \(editingItem.name)")
+            viewModel.reset()
+            dismiss()
+        } catch {
+            print("Ошибка обновления: \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - Preview
-#Preview {
+#Preview("Создание") {
     do {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: ShoppingList.self, GroceryItem.self, configurations: config)
         let context = container.mainContext
-        
+
         let list = ShoppingList(name: "Продукты", iconName: "IconCart", iconColor: "slYellowAdditional")
         context.insert(list)
-        
+
         return AddItemView(shoppingList: list)
+            .modelContainer(container)
+    } catch {
+        return Text("Ошибка превью: \(error.localizedDescription)")
+    }
+}
+
+#Preview("Редактирование") {
+    do {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: ShoppingList.self, GroceryItem.self, configurations: config)
+        let context = container.mainContext
+
+        let list = ShoppingList(name: "Продукты", iconName: "IconCart", iconColor: "slYellowAdditional")
+        context.insert(list)
+
+        let item = GroceryItem(name: "Молоко", isPurchased: false, quantity: 2, unit: "л", list: list)
+        context.insert(item)
+
+        return AddItemView(shoppingList: list, editingItem: item)
             .modelContainer(container)
     } catch {
         return Text("Ошибка превью: \(error.localizedDescription)")

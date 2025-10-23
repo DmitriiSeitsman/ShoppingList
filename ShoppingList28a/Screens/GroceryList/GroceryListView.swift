@@ -6,10 +6,10 @@ struct GroceryListView: View {
     @ObservedObject var viewModel: GroceryListViewModel
     @EnvironmentObject var router: Router
     @Environment(\.modelContext) private var modelContext
-
+    
     // MARK: - State
     @State private var showDeleteAllPurchasedAlert = false
-
+    
     // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
@@ -19,24 +19,56 @@ struct GroceryListView: View {
                 onBack: { router.pop() },
                 onMenu: { viewModel.showingMenu = true }
             )
-
+            
             // MARK: Search
             SearchBarView(searchText: $viewModel.searchText)
                 .padding(.vertical, 12)
                 .background(Color.slBackground)
-
+            
             // MARK: Content
-            if viewModel.filteredItems.isEmpty {
-                EmptyGroceryStateView(showingAddItem: $viewModel.showingAddItem)
+            let trimmedText = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let hasSearch = !trimmedText.isEmpty
+            let itemsToShow = viewModel.filteredItems
+            
+            if itemsToShow.isEmpty {
+                if hasSearch {
+                    VStack(spacing: 8) {
+                        Spacer()
+                        VStack(spacing: 6) {
+                            Image(systemName: "magnifyingglass.circle")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 64, height: 64)
+                                .foregroundColor(.secondary)
+                                .padding(.bottom, 8)
+                            Text("Ничего не найдено")
+                                .font(.appBody)
+                                .foregroundColor(.secondary)
+                            Text("Попробуйте изменить запрос")
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.slBackground)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                } else {
+                    EmptyGroceryStateView(showingAddItem: $viewModel.showingAddItem)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             } else {
                 GroceryItemsList(
+                    items: itemsToShow,
                     list: viewModel.shoppingList,
-                    purchasedCount: viewModel.shoppingList.items.filter(\.isPurchased).count,
+                    purchasedCount: itemsToShow.filter(\.isPurchased).count,
                     onAddItem: { viewModel.showingAddItem = true },
-                    onDeleteAllPurchased: { showDeleteAllPurchasedAlert = true }, // 👈 показать алерт
+                    onDeleteAllPurchased: { showDeleteAllPurchasedAlert = true },
                     onEditList: { viewModel.showingMenu = true }
                 )
             }
+            
         }
         .navigationBarHidden(true)
         .sheet(isPresented: $viewModel.showingAddItem) {
@@ -56,7 +88,7 @@ struct GroceryListView: View {
             Text("Вы действительно хотите удалить все купленные товары?")
         }
     }
-
+    
     // MARK: - Menu Overlay
     @ViewBuilder
     private var menuOverlay: some View {
@@ -68,7 +100,7 @@ struct GroceryListView: View {
                         viewModel.showingMenu = false
                     }
                 }
-
+            
             VStack(spacing: 0) {
                 MenuRow(
                     title: "Сортировать по алфавиту",
@@ -78,9 +110,9 @@ struct GroceryListView: View {
                         viewModel.showingMenu = false
                     }
                 )
-
+                
                 Divider()
-
+                
                 MenuRow(
                     title: "Поделиться",
                     icon: "square.and.arrow.up",
@@ -89,9 +121,9 @@ struct GroceryListView: View {
                         viewModel.showingMenu = false
                     }
                 )
-
+                
                 Divider()
-
+                
                 MenuRow(
                     title: "Снять отметки со всех товаров",
                     icon: "arrow.triangle.2.circlepath",
@@ -100,9 +132,9 @@ struct GroceryListView: View {
                         viewModel.showingMenu = false
                     }
                 )
-
+                
                 Divider()
-
+                
                 MenuRow(
                     title: "Удалить купленные товары",
                     icon: "trash",
@@ -140,13 +172,13 @@ struct GroceryListView: View {
             GroceryItem(name: "Хлеб", isPurchased: true, quantity: 1, unit: "шт", list: list),
             GroceryItem(name: "Яйца", isPurchased: false, quantity: 10, unit: "шт", list: list)
         ]
-
+        
         list.items = items
         context.insert(list)
         items.forEach { context.insert($0) }
-
+        
         let viewModel = GroceryListViewModel(shoppingList: list, modelContext: context)
-
+        
         return GroceryListView(viewModel: viewModel)
             .environmentObject(Router())
             .modelContainer(container)

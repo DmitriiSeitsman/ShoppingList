@@ -6,6 +6,7 @@ import Combine
 final class GroceryListViewModel: ObservableObject {
     // MARK: - Published
     @Published var searchText: String = ""
+    @Published private(set) var filteredItems: [GroceryItem] = []
     @Published var showingAddItem: Bool = false
     @Published var showingMenu: Bool = false
     @Published var sortOrder: SortOrder = .dateAdded
@@ -13,6 +14,7 @@ final class GroceryListViewModel: ObservableObject {
     // MARK: - Properties
     let shoppingList: ShoppingList
     private let modelContext: ModelContext
+    private var cancellables = Set<AnyCancellable>()
     private var originalOrder: [GroceryItem] = []
 
     enum SortOrder {
@@ -20,33 +22,50 @@ final class GroceryListViewModel: ObservableObject {
         case dateAdded
     }
 
-    // MARK: - Computed Properties
-    var filteredItems: [GroceryItem] {
-        let baseItems = searchText.isEmpty
-            ? shoppingList.items
-            : shoppingList.items.filter {
-                $0.name.localizedCaseInsensitiveContains(searchText)
-            }
-
-        switch sortOrder {
-        case .name:
-            return baseItems.sorted {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
-        case .dateAdded:
-            return baseItems
-        }
-    }
-
     // MARK: - Init
     init(shoppingList: ShoppingList, modelContext: ModelContext) {
         self.shoppingList = shoppingList
         self.modelContext = modelContext
         self.originalOrder = shoppingList.items
+
+        setupSearchPipeline()
+        applyFilters()
+    }
+
+    // MARK: - Combine Search
+    private func setupSearchPipeline() {
+        $searchText
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.applyFilters()
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Filtering Logic
+    private func applyFilters() {
+        let baseItems = shoppingList.items
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let searched: [GroceryItem] = trimmed.isEmpty
+            ? baseItems
+            : baseItems.filter {
+                $0.name.localizedCaseInsensitiveContains(trimmed) ||
+                $0.unit.localizedCaseInsensitiveContains(trimmed)
+            }
+
+        switch sortOrder {
+        case .name:
+            filteredItems = searched.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        case .dateAdded:
+            filteredItems = searched
+        }
     }
 
     // MARK: - Actions
-
     func togglePurchased(for item: GroceryItem) {
         item.isPurchased.toggle()
         saveContext()
@@ -55,13 +74,15 @@ final class GroceryListViewModel: ObservableObject {
     func addItem(_ item: GroceryItem) {
         item.list = shoppingList
         modelContext.insert(item)
-        shoppingList.items.append(item) // сохраняем в конец списка
+        shoppingList.items.append(item)
         saveContext()
+        applyFilters()
     }
 
     func deleteItem(_ item: GroceryItem) {
         modelContext.delete(item)
         saveContext()
+        applyFilters()
     }
 
     func clearPurchased() {
@@ -69,6 +90,7 @@ final class GroceryListViewModel: ObservableObject {
             modelContext.delete(item)
         }
         saveContext()
+        applyFilters()
     }
 
     func toggleSortOrder() {
@@ -83,6 +105,7 @@ final class GroceryListViewModel: ObservableObject {
             }
         }
         saveContext()
+        applyFilters()
     }
 
     func uncheckAll() {
@@ -90,10 +113,11 @@ final class GroceryListViewModel: ObservableObject {
             item.isPurchased = false
         }
         saveContext()
+        applyFilters()
     }
 
     func shareList() {
-        // TODO: добавить функционал экспорта / шеринга
+        print("Share \(shoppingList.name)")
     }
 
     // MARK: - Private

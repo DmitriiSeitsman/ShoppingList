@@ -31,7 +31,7 @@ struct EmptyGroceryStateView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
         }
-        .background(Color.slFramesBackground.ignoresSafeArea())
+        .background(Color.slBackground.ignoresSafeArea())
     }
 }
 
