@@ -29,4 +29,16 @@ final class ShoppingList {
   var purchasedCount: Int {
     items.filter { $0.isPurchased }.count
   }
+
+  func copy(name: String? = nil, createdAt: Date = .now) -> ShoppingList {
+    let copy = ShoppingList(
+      name: name ?? self.name,
+      createdAt: createdAt,
+      iconName: self.iconName,
+      iconColor: self.iconColor
+    )
+    copy.items = self.items.map { $0.copy(attachedTo: copy) }
+    return copy
+  }
+
 }

@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 @main
@@ -9,5 +10,6 @@ struct ShoppingList28aApp: App {
       RootView()
         .environmentObject(appState)
     }
+    .modelContainer(for: [ShoppingList.self, GroceryItem.self])
   }
 }

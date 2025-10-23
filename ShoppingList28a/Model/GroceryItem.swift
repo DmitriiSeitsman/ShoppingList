@@ -22,4 +22,14 @@ final class GroceryItem {
     self.unit = unit
     self.list = list
   }
+
+  func copy(attachedTo list: ShoppingList? = nil) -> GroceryItem {
+    GroceryItem(
+      name: self.name,
+      isPurchased: self.isPurchased,
+      quantity: self.quantity,
+      unit: self.unit,
+      list: list
+    )
+  }
 }
