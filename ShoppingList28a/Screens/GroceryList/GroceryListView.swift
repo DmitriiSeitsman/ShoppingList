@@ -110,7 +110,7 @@ struct GroceryListView: View {
                 VStack(spacing: 0) {
                     MenuRow(
                         title: viewModel.sortOrder == .name
-                            ? "Сортировка: А–Я"
+                            ? "Сортировать по алфавиту"
                             : "Сортировать по алфавиту",
                         icon: "arrow.up.arrow.down",
                         iconColor: viewModel.sortOrder == .name ? .slRedSystem : .primary,
