@@ -1,28 +1,31 @@
 import SwiftUI
+import SwiftData
 
 struct GroceryListItem: View {
-  @Binding var item: GroceryItem
+  @Bindable var item: GroceryItem
   var onDelete: () -> Void = {}
   var onFlag: () -> Void = {}
 
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Toggle(item.name, isOn: $item.isPurchased)
-          .toggleStyle(.checkbox)
+        Toggle(isOn: $item.isPurchased) {
+          Text(item.name)
+            .strikethrough(item.isPurchased, color: .gray.opacity(0.6))
+            .foregroundColor(item.isPurchased ? .gray : .primary)
+        }
+        .toggleStyle(.checkbox)
+
         Spacer()
-        Text("\(item.quantity) шт.")
+        Text("\(item.quantity) \(item.unit)")
+          .foregroundColor(.secondary)
       }
       .padding(.horizontal, 16)
       .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-        Button(action: onDelete) {
-          Image(systemName: "trash")
-        }
-        .tint(.slRedSystem)
-        Button(action: onFlag) {
-          Image(systemName: "square.and.pencil")
-        }
-        .tint(.slGreySystem)
+        Button(action: onDelete) { Image(systemName: "trash") }
+          .tint(.slRedSystem)
+        Button(action: onFlag) { Image(systemName: "square.and.pencil") }
+          .tint(.slGreySystem)
       }
       Divider()
     }
@@ -32,32 +35,21 @@ struct GroceryListItem: View {
 }
 
 #Preview("two items") {
-  PreviewHost()
+    PreviewHost()
 }
 
 private struct PreviewHost: View {
-  @State private var items: [GroceryItem] = [
-    GroceryItem(name: "Apples", isPurchased: true, quantity: 5),
-    GroceryItem(name: "Bananas", isPurchased: false, quantity: 3)
-  ]
+    private let list = ShoppingList.preview
 
-  var body: some View {
-    List {
-      ForEach(items.indices, id: \.self) { index in
-        GroceryListItem(
-          item: $items[index],
-          onDelete: { items.remove(at: index) },
-          onFlag: {
-            print("Edit \(items[index].name)")
-          }
-        )
-        .foregroundColor(!items[index].isPurchased ? .slBlackFontsMain : .slGreyList)
-
-      }
-      .onDelete { indexSet in
-        items.remove(atOffsets: indexSet)
-      }
+    var body: some View {
+        List {
+            ForEach(list.items) { item in
+                GroceryListItem(
+                    item: item,
+                    onDelete: {},
+                    onFlag: {}
+                )
+            }
+        }
     }
-    .listStyle(.plain)
-  }
 }

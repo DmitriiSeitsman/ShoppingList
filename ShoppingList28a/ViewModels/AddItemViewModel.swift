@@ -1,7 +1,10 @@
 import SwiftUI
 import Combine
+import SwiftData
 
+@MainActor
 final class AddItemViewModel: ObservableObject {
+    // MARK: - Published properties
     @Published var name: String = ""
     @Published var quantity: String = ""
     @Published var unit: String = "шт"
@@ -12,34 +15,58 @@ final class AddItemViewModel: ObservableObject {
 
     let availableUnits = ["шт", "кг", "г", "л", "мл"]
 
-    func createItem(items: [GroceryItem]) -> GroceryItem? {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces).lowercased()
+    // MARK: - Validation and creation
+    func createItem(for list: ShoppingList, in context: ModelContext) -> GroceryItem? {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         nameError = false
         nameErrorText = nil
         quantityError = false
         quantityErrorText = nil
 
+        // Проверка имени
         guard !trimmedName.isEmpty else {
             nameError = true
             nameErrorText = "Введите название товара"
             return nil
         }
 
-        if items.contains(where: { $0.name.lowercased() == trimmedName }) {
+        // Проверка на дубли
+        if list.items.contains(where: { $0.name.lowercased() == trimmedName.lowercased() }) {
             nameError = true
-            nameErrorText = "Товар с таким названием уже существует"
+            nameErrorText = "Такой товар уже есть"
             return nil
         }
 
-        guard let quantityValue = Int(quantity), !quantity.isEmpty else {
+        // Проверка количества
+        guard let quantityValue = Int(quantity), quantityValue > 0 else {
             quantityError = true
-            quantityErrorText = "Введите количество"
+            quantityErrorText = "Введите корректное количество"
             return nil
         }
 
-        return GroceryItem(name: name, isPurchased: false, quantity: quantityValue, unit: unit)
+        // Создание и привязка к списку
+        let newItem = GroceryItem(
+            name: trimmedName,
+            isPurchased: false,
+            quantity: quantityValue,
+            unit: unit,
+            list: list
+        )
+
+        context.insert(newItem)
+        list.items.append(newItem)
+
+        do {
+            try context.save()
+            print("✅ Сохранён товар \(trimmedName) в список \(list.name)")
+            return newItem
+        } catch {
+            print("❌ Ошибка сохранения: \(error.localizedDescription)")
+            return nil
+        }
     }
 
+    // MARK: - Reset
     func reset() {
         name = ""
         quantity = ""

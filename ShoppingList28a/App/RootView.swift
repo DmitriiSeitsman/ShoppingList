@@ -1,15 +1,20 @@
 import SwiftUI
+import SwiftData
 
 enum AppRoute: Hashable {
     case createList
     case storySet(ShoppingList)
     case addItem(ShoppingList)
+    case editList(ShoppingList)
 }
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.modelContext) private var modelContext
+    @Query private var lists: [ShoppingList]
     @StateObject private var router = Router()
-    
+    @AppStorage("appTheme") private var appTheme: AppTheme = .system
+
     var body: some View {
         NavigationStack(path: $router.path) {
             Group {
@@ -26,26 +31,35 @@ struct RootView: View {
                 case .createList:
                     CreateListView()
                         .environmentObject(router)
-                        .navigationBarBackButtonHidden(true)
-                        .navigationBarTitleDisplayMode(.inline)
-                    
+                        .navigationBarHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
+
                 case .storySet(let list):
-                    EmptyGroceryStateView(
-                        listName: list.name,
-                        onBack: { router.pop() },
-                        items: .constant(list.items)
+                    let viewModel = GroceryListViewModel(
+                        shoppingList: list,
+                        modelContext: modelContext
                     )
-                    .environmentObject(router)
-                    .navigationBarBackButtonHidden(true)
-                    .navigationBarTitleDisplayMode(.inline)
-                    
-                case .addItem(let list):
-                    AddItemView(items: .constant(list.items))
+                    GroceryListView(viewModel: viewModel)
                         .environmentObject(router)
-                        .navigationBarBackButtonHidden(true)
-                        .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
+
+                case .addItem(let list):
+                    AddItemView(shoppingList: list)
+                        .environmentObject(router)
+                        .navigationBarHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
+                case .editList(let list):
+                    CreateListView(editingList: list)
+                        .environmentObject(router)
+                        .navigationBarHidden(true)
+                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
+        }
+        .preferredColorScheme(appTheme.colorScheme)
+        .onAppear {
+            ThemeManager.apply(appTheme)
         }
     }
 }
@@ -53,4 +67,5 @@ struct RootView: View {
 #Preview {
     RootView()
         .environmentObject(AppState())
+        .modelContainer(for: [ShoppingList.self, GroceryItem.self], inMemory: true)
 }
