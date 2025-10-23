@@ -1,80 +1,116 @@
 import SwiftUI
+import SwiftData
 
 struct GroceryItemsList: View {
-    @Binding var items: [GroceryItem]
+    // MARK: - Properties
+    @Environment(\.modelContext) private var modelContext
+
+    @Query(sort: [SortDescriptor(\GroceryItem.name)])
+    private var allItems: [GroceryItem]
+
+    let list: ShoppingList
     let purchasedCount: Int
     let onAddItem: () -> Void
-    let onDelete: (GroceryItem) -> Void
     let onDeleteAllPurchased: () -> Void
     let onEditList: () -> Void
-    
+
+    // MARK: - Init
+    init(
+        list: ShoppingList,
+        purchasedCount: Int,
+        onAddItem: @escaping () -> Void,
+        onDeleteAllPurchased: @escaping () -> Void,
+        onEditList: @escaping () -> Void
+    ) {
+        self.list = list
+        self.purchasedCount = purchasedCount
+        self.onAddItem = onAddItem
+        self.onDeleteAllPurchased = onDeleteAllPurchased
+        self.onEditList = onEditList
+    }
+
+    // MARK: - Computed filtered items
+    private var items: [GroceryItem] {
+        allItems.filter { $0.list?.persistentModelID == list.persistentModelID }
+    }
+
+    // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
-            List {
-                ForEach(items.indices, id: \.self) { index in
-                    ZStack {
+            if items.isEmpty {
+                Text("Нет товаров 😕")
+                    .foregroundColor(.secondary)
+                    .padding(.top, 40)
+            } else {
+                List {
+                    ForEach(items) { item in
                         GroceryListItem(
-                            item: $items[index],
-                            onDelete: { onDelete(items[index]) },
-                            onFlag: {
-                                print("Редактировать товар: \(items[index].name)")
-                            }
+                            item: .constant(item),
+                            onDelete: { deleteItem(item) },
+                            onFlag: { print("✏️ Редактировать: \(item.name)") }
                         )
-                        .foregroundColor(!items[index].isPurchased ? .slBlackFontsMain : .slGreyList)
+                        .listRowInsets(EdgeInsets())
                     }
-                    .overlay(
-                        Color.slBackground
-                            .frame(height: 1),
-                        alignment: .bottom
-                    )
-                    .overlay(alignment: .top) {
-                        if index != items.startIndex {
-                            Rectangle()
-                                .foregroundColor(Color(UIColor.separator))
-                                .frame(height: 1)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            EmptyView()
-                        }
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .background(.slBackground)
                 }
-                .onDelete { indexSet in items.remove(atOffsets: indexSet) }
+                .listStyle(.plain)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.slBackground)
-            
+
+            Spacer()
+
             PrimaryButton(title: "Добавить товар", isActive: true, action: onAddItem)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 20)
+                .padding(.bottom, 12)
+        }
+    }
+
+    // MARK: - Actions
+    private func deleteItem(_ item: GroceryItem) {
+        modelContext.delete(item)
+        saveContext()
+    }
+
+    private func deletePurchased() {
+        items.filter { $0.isPurchased }.forEach(modelContext.delete)
+        saveContext()
+        onDeleteAllPurchased()
+    }
+
+    private func saveContext() {
+        do {
+            try modelContext.save()
+        } catch {
+            print("❌ Ошибка сохранения контекста: \(error.localizedDescription)")
         }
     }
 }
 
-// MARK: - Preview
 #Preview {
-    let items = [
-        GroceryItem(name: "Молоко", isPurchased: false, quantity: 2, unit: "л"),
-        GroceryItem(name: "Сыр", isPurchased: false, quantity: 2, unit: "кг"),
-        GroceryItem(name: "Масло", isPurchased: false, quantity: 2, unit: "кг"),
-        GroceryItem(name: "Хлеб", isPurchased: true, quantity: 1, unit: "шт")
-    ]
-    
-    return GroceryItemsList(
-        items: .constant(items),
-        purchasedCount: 1,
-        onAddItem: { print("Add item") },
-        onDelete: { item in
-            print("Delete item: \(item.name)")
-        },
-        onDeleteAllPurchased: {
-            print("Delete all purchased items")
-        },
-        onEditList: {
-            print("Редактировать список")
-        }
-    )
+    do {
+        let container = try ModelContainer(
+            for: ShoppingList.self, GroceryItem.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+
+        let context = container.mainContext
+        let list = ShoppingList(name: "Продукты")
+        context.insert(list)
+
+        let sampleItems = [
+            GroceryItem(name: "Молоко", isPurchased: false, quantity: 2, unit: "л", list: list),
+            GroceryItem(name: "Хлеб", isPurchased: true, quantity: 1, unit: "шт", list: list)
+        ]
+        sampleItems.forEach(context.insert)
+
+        return GroceryItemsList(
+            list: list,
+            purchasedCount: sampleItems.filter { $0.isPurchased }.count,
+            onAddItem: {},
+            onDeleteAllPurchased: {},
+            onEditList: {}
+        )
+        .modelContainer(container)
+    } catch {
+        fatalError("Ошибка превью: \(error)")
+    }
 }

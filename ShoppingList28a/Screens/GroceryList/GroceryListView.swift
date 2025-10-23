@@ -2,162 +2,155 @@ import SwiftUI
 import SwiftData
 
 struct GroceryListView: View {
-    @Environment(\.dismiss) private var dismiss
+    // MARK: - Dependencies
+    @ObservedObject var viewModel: GroceryListViewModel
+    @EnvironmentObject var router: Router
     @Environment(\.modelContext) private var modelContext
-    
-    @StateObject private var viewModel: GroceryListViewModel
-    
-    init(shoppingList: ShoppingList) {
-        _viewModel = StateObject(wrappedValue: GroceryListViewModel(shoppingList: shoppingList))
-    }
-    
-    // Вычисляемое свойство для количества купленных товаров
-    private var purchasedCount: Int {
-        viewModel.shoppingList.purchasedCount
-    }
-    
+
+    // MARK: - State
+    @State private var showDeleteAllPurchasedAlert = false
+
+    // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
-            // Top Bar
+            // MARK: Header
             GroceryListTopBar(
                 listName: viewModel.shoppingList.name,
-                onBack: { dismiss() },
+                onBack: { router.pop() },
                 onMenu: { viewModel.showingMenu = true }
             )
-            
-            // Search Bar
+
+            // MARK: Search
             SearchBarView(searchText: $viewModel.searchText)
                 .padding(.vertical, 12)
                 .background(Color.slBackground)
-            
-            // Content
+
+            // MARK: Content
             if viewModel.filteredItems.isEmpty {
-                EmptyGroceryStateView(onAddItem: { viewModel.showingAddItem = true })
+                EmptyGroceryStateView(showingAddItem: $viewModel.showingAddItem)
             } else {
                 GroceryItemsList(
-                    items: Binding(
-                        get: { viewModel.shoppingList.items },
-                        set: { newItems in
-                            viewModel.shoppingList.items = newItems
-                            viewModel.updateItems()
-                        }
-                    ),
-                    purchasedCount: purchasedCount,
+                    list: viewModel.shoppingList,
+                    purchasedCount: viewModel.shoppingList.items.filter(\.isPurchased).count,
                     onAddItem: { viewModel.showingAddItem = true },
-                    onDelete: viewModel.deleteItem,
-                    onDeleteAllPurchased: { viewModel.clearPurchased() },
-                    onEditList: {
-                        print("Редактируем ячейку")
-                    }
+                    onDeleteAllPurchased: { showDeleteAllPurchasedAlert = true }, // 👈 показать алерт
+                    onEditList: { viewModel.showingMenu = true }
                 )
             }
         }
         .navigationBarHidden(true)
         .sheet(isPresented: $viewModel.showingAddItem) {
-            AddItemView(items: Binding(
-                get: { viewModel.shoppingList.items },
-                set: { newItems in
-                    viewModel.shoppingList.items = newItems
-                    viewModel.updateItems()
-                }
-            ))
+            AddItemView(shoppingList: viewModel.shoppingList)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
-        
-        .overlay(
-            Group {
-                if viewModel.showingMenu {
-                    Color.black.opacity(0.3)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            viewModel.showingMenu = false
-                        }
-                    
-                    VStack(spacing: 0) {
-                        // 1. Сортировать по алфавиту
-                        MenuRow(
-                            title: "Сортировать по алфавиту",
-                            icon: "arrow.up.arrow.down",
-                            action: {
-                                viewModel.sortByName()
-                                viewModel.showingMenu = false
-                            }
-                        )
-                        
-                        Divider()
-                        
-                        // 2. Поделиться
-                        MenuRow(
-                            title: "Поделиться",
-                            icon: "square.and.arrow.up",
-                            action: {
-                                viewModel.shareList()
-                                viewModel.showingMenu = false
-                            }
-                        )
-                        
-                        Divider()
-                        
-                        // 3. Снять отметки со всех товаров
-                        MenuRow(
-                            title: "Снять отметки со всех товаров",
-                            icon: "arrow.triangle.2.circlepath",
-                            action: {
-                                viewModel.uncheckAll()
-                                viewModel.showingMenu = false
-                            }
-                        )
-                        
-                        Divider()
-                        
-                        // 4. Удалить купленные товары
-                        MenuRow(
-                            title: "Удалить купленные товары",
-                            icon: "trash",
-                            isDestructive: true,
-                            action: {
-                                viewModel.clearPurchased()
-                                viewModel.showingMenu = false
-                            }
-                        )
-                    }
-                    .background(Color(.systemBackground))
-                    .cornerRadius(12)
-                    .shadow(radius: 10)
-                    .frame(width: 280)
-                    .position(x: UIScreen.main.bounds.width / 2, y: UIScreen.main.bounds.height / 2)
-                }
+        .background(Color.slBackground.ignoresSafeArea())
+        .overlay(menuOverlay)
+        .alert("Удаление купленных товаров",
+               isPresented: $showDeleteAllPurchasedAlert) {
+            Button("Отменить", role: .cancel) {}
+            Button("Удалить", role: .destructive) {
+                viewModel.clearPurchased()
             }
-        )
+        } message: {
+            Text("Вы действительно хотите удалить все купленные товары?")
+        }
+    }
+
+    // MARK: - Menu Overlay
+    @ViewBuilder
+    private var menuOverlay: some View {
+        if viewModel.showingMenu {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeOut) {
+                        viewModel.showingMenu = false
+                    }
+                }
+
+            VStack(spacing: 0) {
+                MenuRow(
+                    title: "Сортировать по алфавиту",
+                    icon: "arrow.up.arrow.down",
+                    action: {
+                        viewModel.toggleSortOrder()
+                        viewModel.showingMenu = false
+                    }
+                )
+
+                Divider()
+
+                MenuRow(
+                    title: "Поделиться",
+                    icon: "square.and.arrow.up",
+                    action: {
+                        viewModel.shareList()
+                        viewModel.showingMenu = false
+                    }
+                )
+
+                Divider()
+
+                MenuRow(
+                    title: "Снять отметки со всех товаров",
+                    icon: "arrow.triangle.2.circlepath",
+                    action: {
+                        viewModel.uncheckAll()
+                        viewModel.showingMenu = false
+                    }
+                )
+
+                Divider()
+
+                MenuRow(
+                    title: "Удалить купленные товары",
+                    icon: "trash",
+                    isDestructive: true,
+                    action: {
+                        showDeleteAllPurchasedAlert = true
+                        viewModel.showingMenu = false
+                    }
+                )
+            }
+            .background(Color(.systemBackground))
+            .cornerRadius(12)
+            .shadow(radius: 10)
+            .frame(width: 280)
+            .position(x: UIScreen.main.bounds.width / 2,
+                      y: UIScreen.main.bounds.height / 2)
+            .transition(.scale.combined(with: .opacity))
+            .animation(.spring(), value: viewModel.showingMenu)
+        }
     }
 }
 
-// MARK: - Preview
 #Preview {
-    // Создаем интерактивное превью с работающим SwiftData
-    struct InteractivePreview: View {
-        @State private var navigationPath = NavigationPath()
-        
-        var body: some View {
-            NavigationStack(path: $navigationPath) {
-                // Используем preview список из моков
-                GroceryListView(shoppingList: ShoppingList.preview)
-            }
-        }
-    }
-    
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    
     do {
-        let container = try ModelContainer(for: ShoppingList.self, configurations: config)
-        
-        // Добавляем preview данные в контекст
-        let previewList = ShoppingList.preview
-        container.mainContext.insert(previewList)
-        
-        return InteractivePreview()
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(
+            for: ShoppingList.self,
+            GroceryItem.self,
+            configurations: config
+        )
+        let context = container.mainContext
+        let list = ShoppingList(name: "Продукты на неделю")
+        let items = [
+            GroceryItem(name: "Молоко", isPurchased: false, quantity: 1, unit: "л", list: list),
+            GroceryItem(name: "Хлеб", isPurchased: true, quantity: 1, unit: "шт", list: list),
+            GroceryItem(name: "Яйца", isPurchased: false, quantity: 10, unit: "шт", list: list)
+        ]
+
+        list.items = items
+        context.insert(list)
+        items.forEach { context.insert($0) }
+
+        let viewModel = GroceryListViewModel(shoppingList: list, modelContext: context)
+
+        return GroceryListView(viewModel: viewModel)
+            .environmentObject(Router())
             .modelContainer(container)
     } catch {
-        return Text("Ошибка загрузки превью: \(error.localizedDescription)")
-            .padding()
+        return Text("Ошибка превью: \(error.localizedDescription)")
     }
 }

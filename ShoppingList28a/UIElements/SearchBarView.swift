@@ -14,15 +14,15 @@ struct SearchBarView: View {
             if !searchText.isEmpty {
                 Button(action: {
                     searchText = ""
-                }) {
+                }, label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundColor(.gray)
-                }
+                })
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color(.slGreyButton))
+        .background(Color(.slFramesBackground))
         .cornerRadius(8)
         .padding(.horizontal, 16)
     }

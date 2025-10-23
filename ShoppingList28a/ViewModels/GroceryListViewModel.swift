@@ -1,27 +1,28 @@
-import Combine
 import SwiftData
 import SwiftUI
+import Combine
 
+@MainActor
 final class GroceryListViewModel: ObservableObject {
-    // MARK: - Published Properties
+    // MARK: - Published
     @Published var searchText: String = ""
     @Published var showingAddItem: Bool = false
     @Published var showingMenu: Bool = false
-    @Published var sortOrder: SortOrder = .name
-    @Published var refreshTrigger = UUID()
+    @Published var sortOrder: SortOrder = .dateAdded
 
     // MARK: - Properties
     let shoppingList: ShoppingList
     private let modelContext: ModelContext
+    private var originalOrder: [GroceryItem] = []
 
     enum SortOrder {
-        case name, dateAdded
+        case name
+        case dateAdded
     }
 
     // MARK: - Computed Properties
     var filteredItems: [GroceryItem] {
-        let items =
-            searchText.isEmpty
+        let baseItems = searchText.isEmpty
             ? shoppingList.items
             : shoppingList.items.filter {
                 $0.name.localizedCaseInsensitiveContains(searchText)
@@ -29,75 +30,78 @@ final class GroceryListViewModel: ObservableObject {
 
         switch sortOrder {
         case .name:
-            return items.sorted { $0.name < $1.name }
+            return baseItems.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
         case .dateAdded:
-            return items
+            return baseItems
         }
     }
 
-    // MARK: - Initialization
-    init(shoppingList: ShoppingList, modelContext: ModelContext? = nil) {
+    // MARK: - Init
+    init(shoppingList: ShoppingList, modelContext: ModelContext) {
         self.shoppingList = shoppingList
-
-        // Используем переданный context или создаем новый
-        if let context = modelContext {
-            self.modelContext = context
-        } else {
-            // Для превью создаем временный контейнер с обработкой ошибок
-            do {
-                self.modelContext = ModelContext(
-                    try ModelContainer(for: ShoppingList.self)
-                )
-            } catch {
-                // В случае ошибки создаем пустой контекст (fallback)
-                fatalError("Failed to create ModelContainer: \(error)")
-            }
-        }
+        self.modelContext = modelContext
+        self.originalOrder = shoppingList.items
     }
 
     // MARK: - Actions
+
     func togglePurchased(for item: GroceryItem) {
-        // Создаем новый массив с обновленным элементом
-        var updatedItems = shoppingList.items
-        if let index = updatedItems.firstIndex(where: { $0.id == item.id }) {
-            var updatedItem = updatedItems[index]
-            updatedItem.isPurchased.toggle()
-            updatedItems[index] = updatedItem
+        item.isPurchased.toggle()
+        saveContext()
+    }
 
-            // Обновляем список
-            shoppingList.items = updatedItems
-
-            // Триггерим обновление UI
-            refreshTrigger = UUID()
-        }
+    func addItem(_ item: GroceryItem) {
+        item.list = shoppingList
+        modelContext.insert(item)
+        shoppingList.items.append(item) // сохраняем в конец списка
+        saveContext()
     }
 
     func deleteItem(_ item: GroceryItem) {
-        shoppingList.items.removeAll { $0.id == item.id }
-        refreshTrigger = UUID()
-    }
-
-    func sortByName() {
-        sortOrder = .name
-        shoppingList.items.sort { $0.name < $1.name }
-        refreshTrigger = UUID()
-    }
-
-    func sortByDateAdded() {
-        sortOrder = .dateAdded
-        refreshTrigger = UUID()
+        modelContext.delete(item)
+        saveContext()
     }
 
     func clearPurchased() {
-        shoppingList.items.removeAll { $0.isPurchased }
-        refreshTrigger = UUID()
+        for item in shoppingList.items where item.isPurchased {
+            modelContext.delete(item)
+        }
+        saveContext()
     }
 
-    func updateItems() {
-        refreshTrigger = UUID()
+    func toggleSortOrder() {
+        if sortOrder == .name {
+            sortOrder = .dateAdded
+            shoppingList.items = originalOrder
+        } else {
+            originalOrder = shoppingList.items
+            sortOrder = .name
+            shoppingList.items.sort {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }
+        }
+        saveContext()
     }
 
-    func uncheckAll() {}
+    func uncheckAll() {
+        for item in shoppingList.items where item.isPurchased {
+            item.isPurchased = false
+        }
+        saveContext()
+    }
 
-    func shareList() {}
+    func shareList() {
+        // TODO: добавить функционал экспорта / шеринга
+    }
+
+    // MARK: - Private
+    private func saveContext() {
+        do {
+            try modelContext.save()
+        } catch {
+            print("❌ Ошибка сохранения контекста: \(error.localizedDescription)")
+        }
+    }
 }

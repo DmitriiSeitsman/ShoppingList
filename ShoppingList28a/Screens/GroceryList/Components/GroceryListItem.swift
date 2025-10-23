@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct GroceryListItem: View {
   @Binding var item: GroceryItem
@@ -32,32 +33,21 @@ struct GroceryListItem: View {
 }
 
 #Preview("two items") {
-  PreviewHost()
+    PreviewHost()
 }
 
 private struct PreviewHost: View {
-  @State private var items: [GroceryItem] = [
-    GroceryItem(name: "Apples", isPurchased: true, quantity: 5),
-    GroceryItem(name: "Bananas", isPurchased: false, quantity: 3)
-  ]
+    private let list = ShoppingList.preview
 
-  var body: some View {
-    List {
-      ForEach(items.indices, id: \.self) { index in
-        GroceryListItem(
-          item: $items[index],
-          onDelete: { items.remove(at: index) },
-          onFlag: {
-            print("Edit \(items[index].name)")
-          }
-        )
-        .foregroundColor(!items[index].isPurchased ? .slBlackFontsMain : .slGreyList)
-
-      }
-      .onDelete { indexSet in
-        items.remove(atOffsets: indexSet)
-      }
+    var body: some View {
+        List {
+            ForEach(list.items, id: \.name) { item in
+                GroceryListItem(
+                    item: .constant(item),
+                    onDelete: {},
+                    onFlag: {}
+                )
+            }
+        }
     }
-    .listStyle(.plain)
-  }
 }
