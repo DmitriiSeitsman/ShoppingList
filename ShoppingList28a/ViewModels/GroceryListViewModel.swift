@@ -10,28 +10,28 @@ final class GroceryListViewModel: ObservableObject {
     @Published var showingAddItem: Bool = false
     @Published var showingMenu: Bool = false
     @Published var sortOrder: SortOrder = .dateAdded
-
+    
     // MARK: - Properties
     let shoppingList: ShoppingList
     private let modelContext: ModelContext
     private var cancellables = Set<AnyCancellable>()
     private var originalOrder: [GroceryItem] = []
-
+    
     enum SortOrder {
         case name
         case dateAdded
     }
-
+    
     // MARK: - Init
     init(shoppingList: ShoppingList, modelContext: ModelContext) {
         self.shoppingList = shoppingList
         self.modelContext = modelContext
         self.originalOrder = shoppingList.items
-
+        
         setupSearchPipeline()
         applyFilters()
     }
-
+    
     // MARK: - Combine Search
     private func setupSearchPipeline() {
         $searchText
@@ -42,19 +42,19 @@ final class GroceryListViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
-
+    
     // MARK: - Filtering Logic
     private func applyFilters() {
         let baseItems = shoppingList.items
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-
+        
         let searched: [GroceryItem] = trimmed.isEmpty
-            ? baseItems
-            : baseItems.filter {
-                $0.name.localizedCaseInsensitiveContains(trimmed) ||
-                $0.unit.localizedCaseInsensitiveContains(trimmed)
-            }
-
+        ? baseItems
+        : baseItems.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmed) ||
+            $0.unit.localizedCaseInsensitiveContains(trimmed)
+        }
+        
         switch sortOrder {
         case .name:
             filteredItems = searched.sorted {
@@ -64,13 +64,14 @@ final class GroceryListViewModel: ObservableObject {
             filteredItems = searched
         }
     }
-
+    
     // MARK: - Actions
     func togglePurchased(for item: GroceryItem) {
         item.isPurchased.toggle()
         saveContext()
+        objectWillChange.send()
     }
-
+    
     func addItem(_ item: GroceryItem) {
         item.list = shoppingList
         modelContext.insert(item)
@@ -78,13 +79,13 @@ final class GroceryListViewModel: ObservableObject {
         saveContext()
         applyFilters()
     }
-
+    
     func deleteItem(_ item: GroceryItem) {
         modelContext.delete(item)
         saveContext()
         applyFilters()
     }
-
+    
     func clearPurchased() {
         for item in shoppingList.items where item.isPurchased {
             modelContext.delete(item)
@@ -92,22 +93,17 @@ final class GroceryListViewModel: ObservableObject {
         saveContext()
         applyFilters()
     }
-
+    
     func toggleSortOrder() {
         if sortOrder == .name {
             sortOrder = .dateAdded
-            shoppingList.items = originalOrder
         } else {
-            originalOrder = shoppingList.items
             sortOrder = .name
-            shoppingList.items.sort {
-                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
         }
-        saveContext()
+
         applyFilters()
     }
-
+    
     func uncheckAll() {
         for item in shoppingList.items where item.isPurchased {
             item.isPurchased = false
@@ -115,17 +111,16 @@ final class GroceryListViewModel: ObservableObject {
         saveContext()
         applyFilters()
     }
-
+    
     func shareList() {
         print("Share \(shoppingList.name)")
     }
-
-    // MARK: - Private
-    private func saveContext() {
+    
+    func saveContext() {
         do {
             try modelContext.save()
         } catch {
-            print("❌ Ошибка сохранения контекста: \(error.localizedDescription)")
+            print("Ошибка сохранения контекста: \(error.localizedDescription)")
         }
     }
 }

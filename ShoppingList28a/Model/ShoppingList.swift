@@ -7,10 +7,10 @@ final class ShoppingList {
     var createdAt: Date
     var iconName: String
     var iconColor: String
-
+    
     @Relationship(deleteRule: .cascade)
     var items: [GroceryItem] = []
-
+    
     init(
         name: String,
         createdAt: Date = .now,
@@ -24,11 +24,12 @@ final class ShoppingList {
         self.iconColor = iconColor
         self.items = items
     }
-
+    
+    @Transient
     var purchasedCount: Int {
         items.filter { $0.isPurchased }.count
     }
-
+    
     func copy(name: String? = nil, createdAt: Date = .now) -> ShoppingList {
         let copy = ShoppingList(
             name: name ?? self.name,
