@@ -5,11 +5,11 @@ struct MainView: View {
     @EnvironmentObject private var router: Router
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: [SortDescriptor(\ShoppingList.createdAt, order: .reverse)])
+    @Query(sort: [SortDescriptor(\ShoppingList.createdAt, order: .forward)])
     private var lists: [ShoppingList]
 
-    enum SortOption: CaseIterable { case name, date, none }
-    @State private var sortBy: SortOption = .none
+    enum SortOption: CaseIterable { case name, date }
+    @State private var sortBy: SortOption = .date
 
     private var sortedLists: [ShoppingList] {
         switch sortBy {
@@ -19,13 +19,15 @@ struct MainView: View {
             }
         case .date:
             return lists.sorted { $0.createdAt < $1.createdAt }
-        case .none:
-            return lists
         }
     }
 
     var body: some View {
         VStack {
+            if !sortedLists.isEmpty {
+                Spacer().frame(height: 12)
+            }
+
             ShoppingListsList(
                 lists: sortedLists,
                 sortBy: sortBy,
@@ -51,7 +53,6 @@ struct MainView: View {
             }
             .padding(.horizontal, 16)
         }
-        .padding(.top, 12)
         .padding(.bottom, 20)
         .background(.slBackground)
         .navigationTitle("")
@@ -66,7 +67,7 @@ struct MainView: View {
         do {
             try modelContext.save()
         } catch {
-            print("❌ Save error: \(error.localizedDescription)")
+            print("Save error: \(error.localizedDescription)")
         }
     }
 }

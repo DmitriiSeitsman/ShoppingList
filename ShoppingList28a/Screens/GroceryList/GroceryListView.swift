@@ -92,6 +92,7 @@ struct GroceryListView: View {
         } message: {
             Text("Вы действительно хотите удалить все купленные товары?")
         }
+        .hideKeyboardOnTap()
     }
     
     // MARK: - Menu Overlay

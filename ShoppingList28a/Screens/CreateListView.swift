@@ -5,7 +5,6 @@ struct CreateListView: View {
     @EnvironmentObject private var router: Router
     @Environment(\.modelContext) private var modelContext
 
-    // MARK: - Входные параметры
     var editingList: ShoppingList?
 
     // MARK: - State
@@ -42,6 +41,7 @@ struct CreateListView: View {
                 selectedColor = Color(editingList.iconColor)
             }
         }
+        .hideKeyboardOnTap()
     }
 
     // MARK: - Header
