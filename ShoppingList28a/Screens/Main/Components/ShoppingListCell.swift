@@ -1,18 +1,19 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct ShoppingListCell: View {
     let list: ShoppingList
-
+    
     var body: some View {
         HStack(spacing: 16) {
             // Иконка списка
-            Image(list.iconName)
+            Image(systemName: "cart.fill")
                 .imageScale(.large)
+                .foregroundColor(.blue)
                 .frame(width: 48, height: 48)
-                .background(Color(list.iconColor))
+                .background(Color.blue.opacity(0.1))
                 .clipShape(Circle())
-
+            
             // Название списка
             Text(list.name)
                 .font(.headline)
@@ -20,9 +21,9 @@ struct ShoppingListCell: View {
                 .foregroundColor(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
-
+            
             Spacer()
-
+            
             // Счетчик купленных товаров справа
             HStack(spacing: 4) {
                 Text("\(list.purchasedCount)")
@@ -42,10 +43,7 @@ struct ShoppingListCell: View {
             }
         }
         .padding(.vertical, 8)
-        .padding(.leading, 16)  // Отступ картинки от края ячейки
-        .padding(.trailing, 16) // Отступ чисел от края ячейки
-        .background(Color.slFramesBackground) // Фон ячейки
-        .cornerRadius(16)
+        .padding(.horizontal, 16)
         .frame(height: 84)
     }
 }
