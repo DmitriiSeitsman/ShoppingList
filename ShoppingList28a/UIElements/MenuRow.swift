@@ -4,6 +4,7 @@ struct MenuRow: View {
     let title: String
     let icon: String
     var isDestructive: Bool = false
+    var iconColor: Color = .primary
     let action: () -> Void
 
     var body: some View {
@@ -19,7 +20,7 @@ struct MenuRow: View {
                 Spacer()
 
                 Image(systemName: icon)
-                    .foregroundColor(isDestructive ? .red : .primary)
+                    .foregroundColor(isDestructive ? .red : iconColor)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

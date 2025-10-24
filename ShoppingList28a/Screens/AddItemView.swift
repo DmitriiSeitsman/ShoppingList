@@ -32,6 +32,7 @@ struct AddItemView: View {
             }
         }
         .onDisappear { viewModel.reset() }
+        .hideKeyboardOnTap()
     }
 }
 
@@ -56,7 +57,6 @@ private extension AddItemView {
 
             Spacer()
 
-            // MARK: Done button
             Button("Готово") {
                 if isEditing {
                     updateItem()

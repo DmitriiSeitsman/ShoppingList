@@ -13,18 +13,24 @@ struct ShoppingListsList: View {
 
     var body: some View {
         if lists.isEmpty {
-            EmptyStateView()
+            VStack {
+                Spacer(minLength: 88)
+                EmptyStateView()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.slBackground)
         } else {
-            let sorted = lists.sorted { itemA, itemB in
+            let sorted: [ShoppingList] = {
                 switch sortBy {
                 case .name:
-                    return itemA.name.localizedCaseInsensitiveCompare(itemB.name) == .orderedAscending
+                    return lists.sorted {
+                        $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+                    }
                 case .date:
-                    return itemA.createdAt < itemB.createdAt
-                case .none:
-                    return false
+                    return lists.sorted { $0.createdAt < $1.createdAt }
                 }
-            }
+            }()
 
             List {
                 ForEach(sorted) { item in

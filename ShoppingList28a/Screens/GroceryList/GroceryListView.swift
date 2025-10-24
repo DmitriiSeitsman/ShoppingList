@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 struct GroceryListView: View {
     // MARK: - Dependencies
@@ -16,7 +17,11 @@ struct GroceryListView: View {
             // MARK: Header
             GroceryListTopBar(
                 listName: viewModel.shoppingList.name,
-                onBack: { router.pop() },
+                onBack: {
+                    viewModel.saveContext()
+                    viewModel.objectWillChange.send()
+                    router.pop()
+                },
                 onMenu: { viewModel.showingMenu = true }
             )
             
@@ -87,72 +92,78 @@ struct GroceryListView: View {
         } message: {
             Text("Вы действительно хотите удалить все купленные товары?")
         }
+        .hideKeyboardOnTap()
     }
     
     // MARK: - Menu Overlay
     @ViewBuilder
     private var menuOverlay: some View {
         if viewModel.showingMenu {
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation(.easeOut) {
-                        viewModel.showingMenu = false
+            ZStack(alignment: .topTrailing) {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeOut) {
+                            viewModel.showingMenu = false
+                        }
                     }
+
+                VStack(spacing: 0) {
+                    MenuRow(
+                        title: viewModel.sortOrder == .name
+                            ? "Сортировать по алфавиту"
+                            : "Сортировать по алфавиту",
+                        icon: "arrow.up.arrow.down",
+                        iconColor: viewModel.sortOrder == .name ? .slRedSystem : .primary,
+                        action: {
+                            viewModel.toggleSortOrder()
+                            viewModel.showingMenu = false
+                        }
+                    )
+
+                    Divider()
+
+                    MenuRow(
+                        title: "Поделиться",
+                        icon: "square.and.arrow.up",
+                        action: {
+                            viewModel.shareList()
+                            viewModel.showingMenu = false
+                        }
+                    )
+
+                    Divider()
+
+                    MenuRow(
+                        title: "Снять отметки со всех товаров",
+                        icon: "arrow.triangle.2.circlepath",
+                        action: {
+                            viewModel.uncheckAll()
+                            viewModel.showingMenu = false
+                        }
+                    )
+
+                    Divider()
+
+                    MenuRow(
+                        title: "Удалить купленные товары",
+                        icon: "trash",
+                        isDestructive: true,
+                        action: {
+                            showDeleteAllPurchasedAlert = true
+                            viewModel.showingMenu = false
+                        }
+                    )
                 }
-            
-            VStack(spacing: 0) {
-                MenuRow(
-                    title: "Сортировать по алфавиту",
-                    icon: "arrow.up.arrow.down",
-                    action: {
-                        viewModel.toggleSortOrder()
-                        viewModel.showingMenu = false
-                    }
-                )
-                
-                Divider()
-                
-                MenuRow(
-                    title: "Поделиться",
-                    icon: "square.and.arrow.up",
-                    action: {
-                        viewModel.shareList()
-                        viewModel.showingMenu = false
-                    }
-                )
-                
-                Divider()
-                
-                MenuRow(
-                    title: "Снять отметки со всех товаров",
-                    icon: "arrow.triangle.2.circlepath",
-                    action: {
-                        viewModel.uncheckAll()
-                        viewModel.showingMenu = false
-                    }
-                )
-                
-                Divider()
-                
-                MenuRow(
-                    title: "Удалить купленные товары",
-                    icon: "trash",
-                    isDestructive: true,
-                    action: {
-                        showDeleteAllPurchasedAlert = true
-                        viewModel.showingMenu = false
-                    }
-                )
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(radius: 10)
+                .frame(width: 260)
+                .padding(.top, 60)
+                .padding(.trailing, 16)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.spring(), value: viewModel.showingMenu)
             }
-            .background(Color(.systemBackground))
-            .cornerRadius(12)
-            .shadow(radius: 10)
-            .frame(width: 280)
-            .position(x: UIScreen.main.bounds.width / 2,
-                      y: UIScreen.main.bounds.height / 2)
-            .transition(.scale.combined(with: .opacity))
-            .animation(.spring(), value: viewModel.showingMenu)
         }
     }
 }
