@@ -40,7 +40,7 @@ final class AddItemViewModel: ObservableObject {
         // Проверка количества
         guard let quantityValue = Int(quantity), quantityValue > 0 else {
             quantityError = true
-            quantityErrorText = "Введите корректное количество"
+            quantityErrorText = "Введите количество"
             return nil
         }
 
@@ -66,6 +66,50 @@ final class AddItemViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Update item
+    func updateItem(_ item: GroceryItem, in context: ModelContext, for list: ShoppingList) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        nameError = false
+        nameErrorText = nil
+        quantityError = false
+        quantityErrorText = nil
+
+        // Проверка имени
+        guard !trimmedName.isEmpty else {
+            nameError = true
+            nameErrorText = "Введите название товара"
+            return false
+        }
+
+        // Проверка на дубли (игнорируем текущий элемент)
+        if list.items.contains(where: { $0.name.lowercased() == trimmedName.lowercased() && $0 != item }) {
+            nameError = true
+            nameErrorText = "Такой товар уже есть"
+            return false
+        }
+
+        // Проверка количества
+        guard let quantityValue = Int(quantity), quantityValue > 0 else {
+            quantityError = true
+            quantityErrorText = "Введите количество"
+            return false
+        }
+
+        // Обновляем элемент
+        item.name = trimmedName
+        item.quantity = quantityValue
+        item.unit = unit
+
+        do {
+            try context.save()
+            print("✅ Товар обновлён: \(item.name)")
+            return true
+        } catch {
+            print("❌ Ошибка обновления: \(error.localizedDescription)")
+            return false
+        }
+    }
+    
     // MARK: - Reset
     func reset() {
         name = ""

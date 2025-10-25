@@ -80,8 +80,20 @@ private extension AddItemView {
                 isError: viewModel.nameError,
                 errorText: viewModel.nameErrorText
             )
+            .onChange(of: viewModel.name) { _, newValue in
+                let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                viewModel.nameError = false
+                viewModel.nameErrorText = nil
+                if trimmed.isEmpty {
+                    viewModel.nameError = true
+                    viewModel.nameErrorText = "Введите название товара"
+                } else if shoppingList.items.contains(where: { $0.name.lowercased() == trimmed.lowercased() && (isEditing ? $0 != editingItem : true) }) {
+                    viewModel.nameError = true
+                    viewModel.nameErrorText = "Такой товар уже есть"
+                }
+            }
 
-            HStack(spacing: -12) {
+            HStack(alignment: .top, spacing: -12) {
                 BaseTextField(
                     placeholder: "Количество",
                     text: $viewModel.quantity,
@@ -90,6 +102,14 @@ private extension AddItemView {
                 )
                 .keyboardType(.numberPad)
                 .frame(maxWidth: .infinity)
+                .onChange(of: viewModel.quantity) { _, newValue in
+                      viewModel.quantityError = false
+                      viewModel.quantityErrorText = nil
+                      if Int(newValue) == nil || Int(newValue) ?? 0 <= 0 {
+                          viewModel.quantityError = true
+                          viewModel.quantityErrorText = "Введите количество"
+                      }
+                  }
 
                 ZStack {
                     Text("Ед.изм.:")
@@ -126,52 +146,30 @@ private extension AddItemView {
     }
 
     var isFormValid: Bool {
-        !viewModel.name.isEmpty &&
-        !viewModel.quantity.isEmpty &&
-        Int(viewModel.quantity) != nil
-    }
-}
+        let trimmedName = viewModel.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedName.isEmpty &&
+               !viewModel.quantity.isEmpty &&
+               Int(viewModel.quantity) != nil &&
+               Int(viewModel.quantity)! > 0 &&
+               !viewModel.nameError &&
+               !viewModel.quantityError
+    }}
 
 // MARK: - Save Logic
 private extension AddItemView {
     func addNewItem() {
-        guard isFormValid else { return }
-
-        let newItem = GroceryItem(
-            name: viewModel.name,
-            isPurchased: false,
-            quantity: Int(viewModel.quantity) ?? 1,
-            unit: viewModel.unit,
-            list: shoppingList
-        )
-
-        do {
-            modelContext.insert(newItem)
-            try modelContext.save()
-            print("Товар добавлен: \(newItem.name)")
-            viewModel.reset()
-            dismiss()
-        } catch {
-            print("Ошибка сохранения: \(error.localizedDescription)")
+        guard let newItem = viewModel.createItem(for: shoppingList, in: modelContext) else {
+            return
         }
+        dismiss()
     }
 
     func updateItem() {
         guard let editingItem else { return }
-        guard isFormValid else { return }
-
-        editingItem.name = viewModel.name
-        editingItem.quantity = Int(viewModel.quantity) ?? 1
-        editingItem.unit = viewModel.unit
-
-        do {
-            try modelContext.save()
-            print("Товар обновлён: \(editingItem.name)")
-            viewModel.reset()
-            dismiss()
-        } catch {
-            print("Ошибка обновления: \(error.localizedDescription)")
+        guard viewModel.updateItem(editingItem, in: modelContext, for: shoppingList) else {
+            return 
         }
+        dismiss()
     }
 }
 
